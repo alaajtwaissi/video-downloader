@@ -1,17 +1,15 @@
+// routes.js
+
 const express = require("express");
 const router = express.Router();
-const { startDownload } = require("./services/playwright");
-const { convertToMP4, convertToMP3 } = require("./services/converter");
+const { downloadVideo } = require("./services/video");
 const fs = require("fs");
 const path = require("path");
 
 let activeDownloads = {};
-const TEMP_DIR = path.resolve(__dirname, "../downloads");
-const OUTPUT_DIR = path.resolve(__dirname, "../converted");
+const DOWNLOAD_DIR = path.resolve(__dirname, "../downloads");
 
-if (!fs.existsSync(OUTPUT_DIR)) fs.mkdirSync(OUTPUT_DIR, { recursive: true });
-
-// Start download
+// Download video from direct URL
 router.post("/api/start-download", async (req, res) => {
     const { url } = req.body;
     if (!url) return res.status(400).json({ error: "Missing URL" });
@@ -19,33 +17,29 @@ router.post("/api/start-download", async (req, res) => {
     const downloadId = `dl-${Date.now()}`;
     activeDownloads[downloadId] = { status: "started", progress: 0 };
 
-    startDownload(url)
-        .then((result) => {
-            activeDownloads[downloadId] = { status: "completed", result };
-            console.log("✅ Download completed:", result);
-        })
-        .catch((err) => {
-            activeDownloads[downloadId] = {
-                status: "failed",
-                error: err.message,
-            };
-            console.error("❌ Download failed:", err.message);
-        });
-
-    res.json({ downloadId });
+    try {
+        const result = await downloadVideo(url);
+        activeDownloads[downloadId] = { status: "completed", result };
+        res.json({ downloadId });
+    } catch (err) {
+        activeDownloads[downloadId] = { status: "failed", error: err.message };
+        res.status(500).json({ error: err.message });
+    }
 });
 
-// Check progress
+// Check download progress
 router.get("/api/download-progress/:id", (req, res) => {
     const { id } = req.params;
     const progress = activeDownloads[id] || { status: "not_found" };
     res.json(progress);
 });
 
-// Convert to MP4
+// Convert video to MP4
 router.get("/api/convert-to-mp4", async (req, res) => {
     const { url } = req.query;
-    const inputPath = await downloadTempFile(url);
+    const filename = `video-${Date.now()}.mp4`;
+
+    const inputPath = await downloadTempFile(url, filename);
     const outputFilename = "converted-" + Date.now();
 
     try {
@@ -56,10 +50,12 @@ router.get("/api/convert-to-mp4", async (req, res) => {
     }
 });
 
-// Convert to MP3
+// Convert video to MP3
 router.get("/api/convert-to-mp3", async (req, res) => {
     const { url } = req.query;
-    const inputPath = await downloadTempFile(url);
+    const filename = `video-${Date.now()}.mp4`;
+
+    const inputPath = await downloadTempFile(url, filename);
     const outputFilename = "audio-" + Date.now();
 
     try {
@@ -70,9 +66,9 @@ router.get("/api/convert-to-mp3", async (req, res) => {
     }
 });
 
-async function downloadTempFile(url) {
-    const filename = `temp-${Date.now()}.mp4`;
-    const filePath = path.join(TEMP_DIR, filename);
+// Helper: Download Temp File
+async function downloadTempFile(url, filename) {
+    const filePath = path.join(DOWNLOAD_DIR, filename);
 
     const writer = fs.createWriteStream(filePath);
     const response = await axios.get(url, { responseType: "stream" });
@@ -82,6 +78,54 @@ async function downloadTempFile(url) {
     return new Promise((resolve, reject) => {
         writer.on("finish", () => resolve(filePath));
         writer.on("error", reject);
+    });
+}
+
+// Helper: MP4 Conversion
+function convertToMP4(inputPath, outputFilename) {
+    const ffmpeg = require("fluent-ffmpeg");
+    const ffmpegInstaller = require("@ffmpeg-installer/ffmpeg");
+
+    ffmpeg.setFfmpegPath(ffmpegInstaller.path);
+
+    const outputPath = path.join(
+        __dirname,
+        "../converted",
+        `${outputFilename}.mp4`,
+    );
+
+    return new Promise((resolve, reject) => {
+        ffmpeg(inputPath)
+            .outputOptions("-c:v copy")
+            .outputOptions("-c:a aac")
+            .on("end", () => resolve(outputPath))
+            .on("error", reject)
+            .saveToFile(outputPath);
+    });
+}
+
+// Helper: MP3 Conversion
+function convertToMP3(inputPath, outputFilename) {
+    const ffmpeg = require("fluent-ffmpeg");
+    const ffmpegInstaller = require("@ffmpeg-installer/ffmpeg");
+
+    ffmpeg.setFfmpegPath(ffmpegInstaller.path);
+
+    const outputPath = path.join(
+        __dirname,
+        "../converted",
+        `${outputFilename}.mp3`,
+    );
+
+    return new Promise((resolve, reject) => {
+        ffmpeg(inputPath)
+            .outputOptions("-vn")
+            .outputOptions("-ab 192k")
+            .outputOptions("-ar 44100")
+            .outputOptions("-f mp3")
+            .on("end", () => resolve(outputPath))
+            .on("error", reject)
+            .saveToFile(outputPath);
     });
 }
 
