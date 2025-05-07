@@ -55,7 +55,9 @@ async function startDownload(url) {
 
         await new Promise((r) => setTimeout(r, 5000));
 
-        if (!videoUrl) throw new Error("No video stream found"
+        if (!videoUrl) throw new Error("No video stream found");
+
+        // Download the video
         const response = await axios.get(videoUrl, { responseType: "stream" });
         const filename = `video-${Date.now()}.mp4`;
         const filePath = path.join(DOWNLOAD_DIR, filename);
