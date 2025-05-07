@@ -28,10 +28,8 @@ async function startDownload(url) {
 
     // For websites like YouTube
     try {
-        const browser = await chromium.launch({
-            executablePath: "/usr/bin/chromium-browser",
-            headless: true,
-        });
+        // No custom executable path needed
+        const browser = await chromium.launch({ headless: true });
 
         const page = await browser.newPage();
 
@@ -42,7 +40,7 @@ async function startDownload(url) {
             await route.continue();
         });
 
-        await page.goto(url, { waitUntil: "networkidle" });
+        await page.goto(url, { waitUntil: "networkidle0" });
 
         // Try to get video URL from <video> tag
         const src = await page.evaluate(() => {
