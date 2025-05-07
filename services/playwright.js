@@ -1,4 +1,4 @@
-const { _electron, _node } = require("playwright-core");
+const { chromium } = require("playwright-core");
 const axios = require("axios");
 const fs = require("fs");
 const path = require("path");
@@ -28,8 +28,9 @@ async function startDownload(url) {
 
     // For websites like YouTube
     try {
-        const browser = await _node.launch({
+        const browser = await chromium.launch({
             executablePath: "/usr/bin/chromium-browser",
+            headless: true,
         });
 
         const page = await browser.newPage();
