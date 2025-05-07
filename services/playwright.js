@@ -28,8 +28,10 @@ async function startDownload(url) {
 
     // For websites like YouTube
     try {
-        // No custom executable path needed
-        const browser = await chromium.launch({ headless: true });
+        const browser = await chromium.launch({
+            executablePath: "/usr/bin/chromium-browser",
+            headless: true,
+        });
 
         const page = await browser.newPage();
 
