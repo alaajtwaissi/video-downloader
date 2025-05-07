@@ -12,6 +12,7 @@ async function startDownload(url) {
     // If it's already a direct .mp4 link, download it directly
     if (url.endsWith(".mp4")) {
         console.log("Direct MP4 link detected. Downloading...");
+        console.log("URL:", url);
 
         const filename = `video-${Date.now()}.mp4`;
         const filePath = path.join(DOWNLOAD_DIR, filename);
@@ -24,6 +25,8 @@ async function startDownload(url) {
         });
         
         if (response.status !== 200) {
+            console.error(`Download failed with status: ${response.status}`);
+            console.error(`Response headers:`, response.headers);
             throw new Error(`Failed to download: HTTP ${response.status}`);
         }
 
