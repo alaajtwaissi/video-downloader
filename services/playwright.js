@@ -1,6 +1,6 @@
 // services/playwright.js
 
-const { chromium } = require("playwright");
+const { firefox } = require("playwright");
 const axios = require("axios");
 const fs = require("fs");
 const path = require("path");
@@ -30,7 +30,7 @@ async function startDownload(url) {
 
     // For websites like YouTube
     try {
-        const browser = await chromium.launch({ headless: true });
+        const browser = await firefox.launch({ headless: true });
         const page = await browser.newPage();
 
         let videoUrl = null;
