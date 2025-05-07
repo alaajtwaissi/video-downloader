@@ -1,6 +1,9 @@
 const ffmpeg = require("fluent-ffmpeg");
+const ffmpegInstaller = require("@ffmpeg-installer/ffmpeg");
 const fs = require("fs");
 const path = require("path");
+
+ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 
 const OUTPUT_DIR = path.resolve(__dirname, "../converted");
 
@@ -8,7 +11,7 @@ if (!fs.existsSync(OUTPUT_DIR)) {
     fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 }
 
-function convertToMP4(inputPath, outputFilename) {
+async function convertToMP4(inputPath, outputFilename) {
     const outputPath = path.join(OUTPUT_DIR, `${outputFilename}.mp4`);
 
     return new Promise((resolve, reject) => {
@@ -21,7 +24,7 @@ function convertToMP4(inputPath, outputFilename) {
     });
 }
 
-function convertToMP3(inputPath, outputFilename) {
+async function convertToMP3(inputPath, outputFilename) {
     const outputPath = path.join(OUTPUT_DIR, `${outputFilename}.mp3`);
 
     return new Promise((resolve, reject) => {
