@@ -1,4 +1,6 @@
-const { chromium } = require("playwright");
+// services/playwright.js
+
+const { _electron, _node } = require("playwright-core");
 const axios = require("axios");
 const fs = require("fs");
 const path = require("path");
@@ -28,7 +30,10 @@ async function startDownload(url) {
 
     // For websites like YouTube
     try {
-        const browser = await chromium.launch();
+        const browser = await _node.launch({
+            executablePath: "/usr/bin/chromium-browser",
+        });
+
         const page = await browser.newPage();
 
         let videoUrl = null;
@@ -40,7 +45,7 @@ async function startDownload(url) {
 
         await page.goto(url, { waitUntil: "networkidle" });
 
-        // Try to get from <video> tag
+        // Try to get video URL from <video> tag
         const src = await page.evaluate(() => {
             const video = document.querySelector("video");
             return video?.src;
