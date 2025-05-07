@@ -31,7 +31,6 @@ async function startDownload(url) {
     // For websites like YouTube
     try {
         const browser = await chromium.launch({ headless: true });
-
         const page = await browser.newPage();
 
         let videoUrl = null;
@@ -58,13 +57,13 @@ async function startDownload(url) {
         if (!videoUrl) throw new Error("No video stream found");
 
         // Download the video
-        const response = await axios.get(videoUrl, { responseType: "stream" });
+        const response = await fetch(videoUrl);
         const filename = `video-${Date.now()}.mp4`;
         const filePath = path.join(DOWNLOAD_DIR, filename);
 
         const writer = fs.createWriteStream(filePath);
         await new Promise((resolve, reject) => {
-            response.data.pipe(writer);
+            response.body.pipe(writer);
             writer.on("finish", resolve);
             writer.on("error", reject);
         });
