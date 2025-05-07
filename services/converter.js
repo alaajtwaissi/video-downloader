@@ -11,10 +11,25 @@ if (!fs.existsSync(OUTPUT_DIR)) {
     fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 }
 
+function isValidVideoFile(filePath) {
+    try {
+        const data = fs.readFileSync(filePath);
+        // Check if the file starts with MP4 signature
+        const header = data.slice(0, 4).toString("hex");
+        return header === "0000001466747970" || header === "33676701"; // MP4/MOV headers
+    } catch (err) {
+        return false;
+    }
+}
+
 async function convertToMP4(inputPath, outputFilename) {
     const outputPath = path.join(OUTPUT_DIR, `${outputFilename}.mp4`);
 
     return new Promise((resolve, reject) => {
+        if (!isValidVideoFile(inputPath)) {
+            return reject("Invalid video file — cannot convert");
+        }
+
         ffmpeg(inputPath)
             .outputOptions("-c:v copy")
             .outputOptions("-c:a aac")
@@ -28,11 +43,13 @@ async function convertToMP3(inputPath, outputFilename) {
     const outputPath = path.join(OUTPUT_DIR, `${outputFilename}.mp3`);
 
     return new Promise((resolve, reject) => {
+        if (!isValidVideoFile(inputPath)) {
+            return reject("Invalid video file — cannot extract audio");
+        }
+
         ffmpeg(inputPath)
             .outputOptions("-vn")
             .outputOptions("-ab 192k")
-            .outputOptions("-ar 44100")
-            .outputOptions("-f mp3")
             .on("end", () => resolve(outputPath))
             .on("error", reject)
             .saveToFile(outputPath);
