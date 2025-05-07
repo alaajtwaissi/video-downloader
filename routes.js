@@ -13,8 +13,8 @@ router.post('/api/start-download', async (req, res) => {
         const result = await startDownload(url);
         res.json(result);
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Download failed' });
+        console.error('Download error:', err.message);
+        res.status(500).json({ error: `Download failed: ${err.message}` });
     }
 });
 

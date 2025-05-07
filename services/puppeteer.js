@@ -17,7 +17,15 @@ async function startDownload(url) {
         const filePath = path.join(DOWNLOAD_DIR, filename);
 
         const writer = fs.createWriteStream(filePath);
-        const response = await axios.get(url, { responseType: "stream" });
+        const response = await axios.get(url, { 
+            responseType: "stream",
+            timeout: 10000,
+            validateStatus: false
+        });
+        
+        if (response.status !== 200) {
+            throw new Error(`Failed to download: HTTP ${response.status}`);
+        }
 
         response.data.pipe(writer);
 

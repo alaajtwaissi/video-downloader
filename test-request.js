@@ -1,6 +1,6 @@
 const testDownload = async () => {
   try {
-    const response = await fetch("http://localhost:3000/api/start-download", {
+    const response = await fetch("http://0.0.0.0:3000/api/start-download", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
