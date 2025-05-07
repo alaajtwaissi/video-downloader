@@ -1,5 +1,3 @@
-// services/playwright.js
-
 const { _electron, _node } = require("playwright-core");
 const axios = require("axios");
 const fs = require("fs");
@@ -57,9 +55,7 @@ async function startDownload(url) {
 
         await new Promise((r) => setTimeout(r, 5000));
 
-        if (!videoUrl) throw new Error("No video stream found");
-
-        // Download the video
+        if (!videoUrl) throw new Error("No video stream found"
         const response = await axios.get(videoUrl, { responseType: "stream" });
         const filename = `video-${Date.now()}.mp4`;
         const filePath = path.join(DOWNLOAD_DIR, filename);
