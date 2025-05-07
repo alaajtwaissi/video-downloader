@@ -1,23 +1,49 @@
-const puppeteer = require('puppeteer');
-const fs = require('fs');
-const path = require('path');
+const axios = require("axios");
+const fs = require("fs");
+const path = require("path");
 
-const DOWNLOAD_DIR = path.resolve(__dirname, '../downloads');
+const DOWNLOAD_DIR = path.resolve(__dirname, "../downloads");
 
 if (!fs.existsSync(DOWNLOAD_DIR)) {
     fs.mkdirSync(DOWNLOAD_DIR, { recursive: true });
 }
 
 async function startDownload(url) {
-    const browser = await puppeteer.launch({ headless: 'new' });
+    // If it's already a direct .mp4 link, download it directly
+    if (url.endsWith(".mp4")) {
+        console.log("Direct MP4 link detected. Downloading...");
+
+        const filename = `video-${Date.now()}.mp4`;
+        const filePath = path.join(DOWNLOAD_DIR, filename);
+
+        const writer = fs.createWriteStream(filePath);
+        const response = await axios.get(url, { responseType: "stream" });
+
+        response.data.pipe(writer);
+
+        return new Promise((resolve, reject) => {
+            writer.on("finish", () =>
+                resolve({
+                    status: "downloaded",
+                    filename,
+                    filePath,
+                    size: fs.statSync(filePath).size,
+                }),
+            );
+            writer.on("error", reject);
+        });
+    }
+
+    // Otherwise, try to extract from website using Puppeteer
+    const puppeteer = require("puppeteer");
+    const browser = await puppeteer.launch({ headless: "new" });
     const page = await browser.newPage();
 
     let videoUrl = null;
 
-    // Listen for any video file request
     await page.setRequestInterception(true);
-    page.on('request', req => {
-        const types = ['media', 'xhr', 'fetch'];
+    page.on("request", (req) => {
+        const types = ["media", "xhr", "fetch"];
         if (types.includes(req.resourceType())) {
             const requestUrl = req.url();
             if (/\.(mp4|m3u8|mpd)$/.test(requestUrl)) {
@@ -27,7 +53,7 @@ async function startDownload(url) {
         req.continue();
     });
 
-    await page.goto(url, { waitUntil: 'networkidle2' });
+    await page.goto(url, { waitUntil: "networkidle2" });
 
     if (!videoUrl) {
         await browser.close();
@@ -42,8 +68,8 @@ async function startDownload(url) {
     const writer = fs.createWriteStream(filePath);
     await new Promise((resolve, reject) => {
         response.body.pipe(writer);
-        writer.on('finish', resolve);
-        writer.on('error', reject);
+        writer.on("finish", resolve);
+        writer.on("error", reject);
     });
 
     await browser.close();
@@ -52,7 +78,7 @@ async function startDownload(url) {
         status: "downloaded",
         filename,
         filePath,
-        size: fs.statSync(filePath).size
+        size: fs.statSync(filePath).size,
     };
 }
 
