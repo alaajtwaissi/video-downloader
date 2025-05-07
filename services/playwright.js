@@ -1,5 +1,5 @@
-// services/playwright.js
-
+process.env.PLAYWRIGHT_DOWNLOAD_HOST =
+    "https://npmmirror.com/mirrors/playwright";
 const { firefox } = require("playwright");
 const axios = require("axios");
 const fs = require("fs");
