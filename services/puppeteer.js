@@ -18,17 +18,22 @@ async function startDownload(url) {
         const filePath = path.join(DOWNLOAD_DIR, filename);
 
         const writer = fs.createWriteStream(filePath);
-        const response = await axios.get(url, { 
-            responseType: "stream",
-            timeout: 10000,
-            validateStatus: false
-        });
-        
-        if (response.status !== 200) {
-            console.error(`Download failed with status: ${response.status}`);
-            console.error(`Response headers:`, response.headers);
-            throw new Error(`Failed to download: HTTP ${response.status}`);
-        }
+        try {
+            const response = await axios({
+                method: 'get',
+                url: url,
+                responseType: 'stream',
+                timeout: 30000,
+                maxContentLength: Infinity,
+                validateStatus: false
+            });
+            
+            console.log('Download status:', response.status);
+            console.log('Content type:', response.headers['content-type']);
+            
+            if (response.status !== 200) {
+                throw new Error(`Failed to download: HTTP ${response.status}`);
+            }
 
         response.data.pipe(writer);
 
@@ -42,6 +47,9 @@ async function startDownload(url) {
                 }),
             );
             writer.on("error", reject);
+        }).catch(error => {
+            console.error('Stream error:', error);
+            throw error;
         });
     }
 
